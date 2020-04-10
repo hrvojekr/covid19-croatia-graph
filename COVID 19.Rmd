@@ -1,0 +1,93 @@
+---
+title: "COVID-19 'Flattening The Curve' Graph"
+author: "Hrvoje Krpan"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+![](https://www.caracaschronicles.com/wp-content/uploads/2020/01/coronavirus2-1068x601.jpg)
+
+### Description
+
+- In this workbook, I will show how to (re)create a graph that was presented by a Croatian health minister **Vili Beroš** by using ggplot package
+- I saw graph originally at Slobodna Dalmacija portal. Link to [original article](https://slobodnadalmacija.hr/vijesti/hrvatska/beros-medijima-poslao-zanimljiv-graf-o-koronavirusu-obratite-pozornost-na-kljucnu-crvenu-liniju-1013958).
+- Each point on a red line is representing an average of 5 previous days. For instance, the red line over "ožu 30" (Mar 30 in Croatian) is the mean of cases that happened between 26.- 30. March.
+- With a little adjustment of moving average, this plot can be used in salse purposes as well. 
+
+### Install Packages
+
+```{r}
+#devtools::install_github("covid19r/coronavirus")
+#install.packages("tidyverse")
+#install.packages("RcppRoll")
+```
+
+### Load packages
+
+```{r}
+library(coronavirus)
+library(tidyverse)
+library(RcppRoll)
+theme_set(theme_bw())
+```
+ 
+### Getting the data
+ 
+```{r echo=TRUE}
+data("coronavirus")
+tail(coronavirus)
+```
+ 
+```{r}
+cro_covid19_basic <- coronavirus %>% 
+  filter(Country.Region == "Croatia")
+
+tail(cro_covid19_basic)
+```
+
+```{r}
+cro_covid19 <- coronavirus %>% 
+    select(Country.Region, cases, type, date) %>%  
+    group_by(type) %>%  
+    filter(Country.Region=="Croatia") %>% 
+    pivot_wider(names_from = type, values_from = cases) %>%  
+    rename(country=Country.Region) %>% 
+    mutate(rollavg = roll_meanr(confirmed, n = 5)) %>% 
+    filter(confirmed != 0) %>% 
+    arrange(desc(date)) 
+
+head(cro_covid19)
+```
+
+### Data Visualization
+
+```{r warning=FALSE}
+cro_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_line() + 
+  geom_smooth(method = "gam")
+```
+
+```{r warning=FALSE}
+cro_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_bar(stat = "identity",fill = "cornflowerblue", color = "white")+
+  geom_line(aes(x = date, y = rollavg),color = "red", size = 1.1) +
+  labs(subtitle="Number of confirmed cases per day and moving average of last 5 days", 
+       y="Confirmed cases", 
+       x="Date", 
+       title="COVID-19 - Confirmed Cases in Croatia", 
+       caption="Source: Johns Hopkins University Center") +
+  scale_x_date(date_breaks = '1 week', date_labels = "%b %d")
+```
+
+
+
+
+
+
+
+
+
