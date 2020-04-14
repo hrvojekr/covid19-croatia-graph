@@ -1,5 +1,5 @@
 ---
-title: "COVID-19 'Flattening The Curve' Graph"
+title: "COVID-19 'Flattening The Curve' Graphs"
 author: "Hrvoje Krpan"
 output:
   html_document:
@@ -11,10 +11,17 @@ output:
 
 ### Description
 
+#### v.1.
+
 - In this workbook, I will show how to (re)create a graph that was presented by a Croatian health minister **Vili Beroš** by using ggplot package
 - I saw graph originally at Slobodna Dalmacija portal. Link to [original article](https://slobodnadalmacija.hr/vijesti/hrvatska/beros-medijima-poslao-zanimljiv-graf-o-koronavirusu-obratite-pozornost-na-kljucnu-crvenu-liniju-1013958).
 - Each point on a red line is representing an average of 5 previous days. For instance, the red line over "ožu 30" (Mar 30 in Croatian) is the mean of cases that happened between 26.- 30. March.
 - With a little adjustment of moving average, this plot can be used in salse purposes as well. 
+
+#### v.1.1.
+
+- Sweden is a country that has taken a different approach to fighting the coronavirus. That was the reason I wanted to see how it compares to Croatia. 
+- After gathering the data for Sweden, the moving average was calculated (for 7 days) and plotted beside Croatia on one graph. I have used a logarithmic scale.
 
 ### Install Packages
 
@@ -41,6 +48,13 @@ tail(coronavirus)
 ```
  
 ```{r}
+swe_covid19_basic <- coronavirus %>% 
+  filter(Country.Region == "Sweden")
+
+tail(swe_covid19_basic)
+```
+
+```{r}
 cro_covid19_basic <- coronavirus %>% 
   filter(Country.Region == "Croatia")
 
@@ -54,11 +68,26 @@ cro_covid19 <- coronavirus %>%
     filter(Country.Region=="Croatia") %>% 
     pivot_wider(names_from = type, values_from = cases) %>%  
     rename(country=Country.Region) %>% 
-    mutate(rollavg = roll_meanr(confirmed, n = 5)) %>% 
-    filter(confirmed != 0) %>% 
+    mutate(rollavg = roll_meanr(confirmed, n = 7)) %>% 
+    filter(confirmed > 15) %>% 
     arrange(desc(date)) 
 
 head(cro_covid19)
+```
+
+
+```{r}
+swe_covid19 <- coronavirus %>% 
+    select(Country.Region, cases, type, date) %>%  
+    group_by(type) %>%  
+    filter(Country.Region=="Sweden") %>% 
+    pivot_wider(names_from = type, values_from = cases) %>%  
+    rename(country=Country.Region) %>% 
+    mutate(rollavg = roll_meanr(confirmed, n = 7)) %>% 
+    filter(confirmed > 15) %>% 
+    arrange(desc(date)) 
+
+head(swe_covid19)
 ```
 
 ### Data Visualization
@@ -71,11 +100,18 @@ cro_covid19 %>%
 ```
 
 ```{r warning=FALSE}
+swe_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_line() + 
+  geom_smooth(method = "gam")
+```
+
+```{r warning=FALSE}
 cro_covid19 %>% 
   ggplot(aes(x = date, y = confirmed)) + 
   geom_bar(stat = "identity",fill = "cornflowerblue", color = "white")+
   geom_line(aes(x = date, y = rollavg),color = "red", size = 1.1) +
-  labs(subtitle="Number of confirmed cases per day and moving average of last 5 days", 
+  labs(subtitle="Number of confirmed cases per day and moving average of last 7 days", 
        y="Confirmed cases", 
        x="Date", 
        title="COVID-19 - Confirmed Cases in Croatia", 
@@ -84,10 +120,92 @@ cro_covid19 %>%
 ```
 
 
+```{r warning=FALSE}
+swe_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_bar(stat = "identity",fill = "cornflowerblue", color = "white")+
+  geom_line(aes(x = date, y = rollavg),color = "red", size = 1.1) +
+  labs(subtitle="Number of confirmed cases per day and moving average of last 7 days", 
+       y="Confirmed cases", 
+       x="Date", 
+       title="COVID-19 - Confirmed Cases in Sweden", 
+       caption="Source: Johns Hopkins University Center") +
+  scale_x_date(date_breaks = '1 week', date_labels = "%b %d")
+```
 
 
 
+```{r warning=FALSE}
+require(scales)
+cro_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_bar(stat = "identity",fill = "cornflowerblue", color = "white")+
+  geom_line(aes(x = date, y = rollavg),color = "red", size = 1.1) +
+  labs(subtitle="Number of confirmed cases per day and moving average of last 7 days", 
+       y="Confirmed cases log2 scale", 
+       x="Date", 
+       title="COVID-19 - Confirmed Cases in Croatia", 
+       caption="Source: Johns Hopkins University Center") +
+  scale_x_date(date_breaks = '1 week', date_labels = "%b %d") +
+  scale_y_continuous(trans = log2_trans(),
+    breaks = trans_breaks("log2", function(x) 2^x),
+    labels = trans_format("log2", math_format(2^.x)))
+```
 
+
+
+```{r warning=FALSE}
+swe_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_bar(stat = "identity",fill = "cornflowerblue", color = "white")+
+  geom_line(aes(x = date, y = rollavg),color = "red", size = 1.1) +
+  labs(subtitle="Number of confirmed cases per day and moving average of last 7 days", 
+       y="Confirmed cases log2 scale", 
+       x="Date", 
+       title="COVID-19 - Confirmed Cases in Sweden", 
+       caption="Source: Johns Hopkins University Center") +
+  scale_x_date(date_breaks = '1 week', date_labels = "%b %d")+
+  scale_y_continuous(trans = log2_trans(),
+    breaks = trans_breaks("log2", function(x) 2^x),
+    labels = trans_format("log2", math_format(2^.x)))
+```
+
+```{r}
+swe_covid19 %>% 
+  ggplot(aes(x = date, y = confirmed)) + 
+  geom_bar(stat = "identity",fill = "cornflowerblue", color = "white")+
+  geom_line(aes(x = date, y = rollavg),color = "red", size = 1.1) +
+  labs(subtitle="Number of confirmed cases per day and moving average of last 7 days", 
+       y="Confirmed cases", 
+       x="Date", 
+       title="COVID-19 - Confirmed Cases in Sweden", 
+       caption="Source: Johns Hopkins University Center") +
+  scale_x_date(date_breaks = '1 week', date_labels = "%b %d")
+```
+
+```{r warning=FALSE}
+swecro_join <- right_join(cro_covid19, swe_covid19, by="date")
+
+head(swecro_join)
+```
+
+```{r warning=FALSE}
+swecro_join %>% ggplot(aes(x=date)) +
+  geom_line(aes(y=rollavg.x, color = "Croatia"),size = 1.1) +
+  geom_line(aes(y=rollavg.y, color = "Sweden"), size = 1.1) +
+  scale_y_continuous(trans = log2_trans(),
+    breaks = trans_breaks("log2", function(x) 2^x),
+    labels = trans_format("log2", math_format(2^.x))) +
+  labs(subtitle="Moving average of last 7 days for Sweden and Croatia", 
+       y="Confirmed cases (log2 scale)", 
+       x="Date", 
+       title="COVID-19 - Confirmed Cases in Sweden and Croatia", 
+       caption="Source: Johns Hopkins University Center") +
+  scale_colour_manual("", 
+                      breaks = c("Croatia", "Sweden"),
+                      values = c("blue", "yellow")) +
+  scale_x_date(date_breaks = '1 week', date_labels = "%b %d")
+```
 
 
 
