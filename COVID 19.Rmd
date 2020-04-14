@@ -2,12 +2,12 @@
 title: "COVID-19 'Flattening The Curve' Graphs"
 author: "Hrvoje Krpan"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
-![](https://www.caracaschronicles.com/wp-content/uploads/2020/01/coronavirus2-1068x601.jpg)
+![](coronavirus-photo.jpg)
 
 ### Description
 
@@ -18,7 +18,7 @@ output:
 - Each point on a red line is representing an average of 5 previous days. For instance, the red line over "ožu 30" (Mar 30 in Croatian) is the mean of cases that happened between 26.- 30. March.
 - With a little adjustment of moving average, this plot can be used in salse purposes as well. 
 
-#### v.1.1.
+#### v.1.1. (14-04-2020)
 
 - Sweden is a country that has taken a different approach to fighting the coronavirus. That was the reason I wanted to see how it compares to Croatia. 
 - After gathering the data for Sweden, the moving average was calculated (for 7 days) and plotted beside Croatia on one graph. I have used a logarithmic scale.
